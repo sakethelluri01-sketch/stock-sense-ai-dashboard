@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMoverList } from "@/lib/yahoo";
+import { getMoverList } from "@/lib/finnhub";
 
 const allowed = new Set(["day_gainers", "day_losers", "most_actives"]);
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getQuote } from "@/lib/yahoo";
+import { getQuote } from "@/lib/finnhub";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;

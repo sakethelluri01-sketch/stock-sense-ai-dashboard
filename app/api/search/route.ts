@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchSymbols } from "@/lib/yahoo";
+import { searchSymbols } from "@/lib/finnhub";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

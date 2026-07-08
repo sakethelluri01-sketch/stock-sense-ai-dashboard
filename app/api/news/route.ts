@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getNews } from "@/lib/yahoo";
+import { getNews } from "@/lib/finnhub";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
