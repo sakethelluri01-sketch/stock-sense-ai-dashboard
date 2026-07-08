@@ -1,0 +1,14 @@
+node_modules
+.next
+.npm-cache
+.git-temp
+.git-real
+out
+dist
+coverage
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+Thumbs.db
+.DS_Store
