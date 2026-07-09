@@ -87,7 +87,7 @@ export function StockHero({ symbol }: { symbol: string }) {
           </div>
         </div>
       ) : (
-        <EmptyState title="Quote unavailable" body="Yahoo Finance did not return quote data for this symbol." />
+        <EmptyState title="Quote unavailable" body="Finnhub did not return quote data for this symbol." />
       )}
     </Card>
   );
@@ -307,7 +307,7 @@ export function CompanyProfile({ symbol }: { symbol: string }) {
           ) : null}
         </div>
       ) : (
-        <EmptyState title="Profile unavailable" body="Yahoo Finance did not return company metadata." />
+        <EmptyState title="Profile unavailable" body="Finnhub did not return company metadata." />
       )}
     </Card>
   );
@@ -345,7 +345,7 @@ export function MoversTable({ kind, title }: { kind: "day_gainers" | "day_losers
           })}
         </div>
       ) : (
-        <EmptyState title="Movers unavailable" body="Yahoo Finance did not return this screener list." />
+        <EmptyState title="Movers unavailable" body="Finnhub did not return this market list." />
       )}
     </Card>
   );
@@ -482,7 +482,7 @@ export function FearGreed() {
       <SectionTitle title="Fear & Greed" meta="Unavailable-safe" />
       <div className="rounded-lg bg-white/5 p-5 text-center">
         <p className="text-3xl font-semibold text-white">Unavailable</p>
-        <p className="mt-2 text-sm text-slate-400">No free Yahoo endpoint returned an official fear and greed value.</p>
+        <p className="mt-2 text-sm text-slate-400">No Finnhub endpoint is configured for an official fear and greed value.</p>
       </div>
     </Card>
   );

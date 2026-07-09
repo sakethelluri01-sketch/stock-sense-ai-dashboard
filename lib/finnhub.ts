@@ -2,9 +2,14 @@ import type { ChartPoint, NewsItem, SearchResult, StockQuote } from "@/lib/types
 
 const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
 const US_UNIVERSE = ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", "AVGO", "JPM", "LLY", "V", "UNH"];
+const quoteCache = new Map<string, { expiresAt: number; value: StockQuote | null }>();
 
 function getApiKey() {
-  return process.env.FINNHUB_API_KEY;
+  return process.env.FINNHUB_API_KEY?.trim();
+}
+
+export function hasFinnhubApiKey() {
+  return Boolean(getApiKey());
 }
 
 function buildUrl(path: string, params: Record<string, string | number | undefined>) {
@@ -22,7 +27,7 @@ async function fetchJson<T>(path: string, params: Record<string, string | number
   try {
     const response = await fetch(buildUrl(path, params), {
       headers: { Accept: "application/json" },
-      next: { revalidate: 60 }
+      cache: "no-store"
     });
     if (!response.ok) return null;
     return (await response.json()) as T;
@@ -66,17 +71,21 @@ type FinnhubMetric = {
 
 export async function getQuote(symbol: string): Promise<StockQuote | null> {
   const normalized = symbol.toUpperCase();
-  const [quote, profile, metrics] = await Promise.all([
+  const cached = quoteCache.get(normalized);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const [quote, profile, metrics, latestVolume] = await Promise.all([
     fetchJson<FinnhubQuote>("/quote", { symbol: normalized }),
     fetchJson<FinnhubProfile>("/stock/profile2", { symbol: normalized }),
-    fetchJson<FinnhubMetric>("/stock/metric", { symbol: normalized, metric: "all" })
+    fetchJson<FinnhubMetric>("/stock/metric", { symbol: normalized, metric: "all" }),
+    getLatestDailyVolume(normalized)
   ]);
 
   if (!quote || quote.c === undefined || quote.t === 0) return null;
   const metric = metrics?.metric ?? {};
   const marketCapMillions = n(profile?.marketCapitalization) ?? n(metric.marketCapitalization);
 
-  return {
+  const value = {
     symbol: normalized,
     name: profile?.name ?? normalized,
     exchange: s(profile?.exchange),
@@ -87,7 +96,7 @@ export async function getQuote(symbol: string): Promise<StockQuote | null> {
     marketCap: marketCapMillions === null ? null : marketCapMillions * 1_000_000,
     pe: n(metric.peNormalizedAnnual) ?? n(metric.peBasicExclExtraTTM) ?? n(metric.peTTM),
     eps: n(metric.epsTTM) ?? n(metric.epsInclExtraItemsTTM),
-    volume: null,
+    volume: latestVolume,
     dividendYield: n(metric.dividendYieldIndicatedAnnual) ?? n(metric.dividendYield5Y),
     fiftyTwoWeekHigh: n(metric["52WeekHigh"]) ?? n(quote.h),
     fiftyTwoWeekLow: n(metric["52WeekLow"]) ?? n(quote.l),
@@ -98,6 +107,8 @@ export async function getQuote(symbol: string): Promise<StockQuote | null> {
     website: s(profile?.weburl),
     logo: s(profile?.logo)
   };
+  quoteCache.set(normalized, { expiresAt: Date.now() + 30_000, value });
+  return value;
 }
 
 type FinnhubCandle = {
@@ -133,6 +144,19 @@ function mapResolution(interval: string, range: string) {
   if (range === "1d") return "5";
   if (range === "5d") return "15";
   return "D";
+}
+
+async function getLatestDailyVolume(symbol: string) {
+  const to = Math.floor(Date.now() / 1000);
+  const from = to - 10 * 24 * 60 * 60;
+  const data = await fetchJson<FinnhubCandle>("/stock/candle", {
+    symbol,
+    resolution: "D",
+    from,
+    to
+  });
+  const latest = data?.v?.filter((value) => typeof value === "number").at(-1);
+  return n(latest);
 }
 
 export async function getChart(symbol: string, range = "1mo", interval = "1d"): Promise<ChartPoint[]> {
